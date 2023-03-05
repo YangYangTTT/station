@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>录入车辆</title>
+    <link rel="stylesheet" type="text/css" href="../css/element-plus.index.css">
+    <script type="text/javascript" src="../js/vue.global.3.2.39.js"></script>
+    <script type="text/javascript" src="../js/element-plus.2.2.15.js"></script>
+    <script type="text/javascript" src="../js/element_plus_icons.2.0.9.js"></script>
+    <script type="text/javascript" src="../js/axios.min.0.24.0.js"></script>
+</head>
+<body>
+    <div id="app">
+        <el-breadcrumb>
+            <el-breadcrumb-item>主页</el-breadcrumb-item>
+            <el-breadcrumb-item>录入车辆</el-breadcrumb-item>
+        </el-breadcrumb>
+        <br>
+          <el-row>
+              <el-col :span="18">
+                  <el-form :model="vehicle" ref="myForm" :rules="validateRules">
+                  <el-row>
+                      <el-col :span="9">
+                          <el-form-item label="车牌号" prop="vehicleNum"><br>
+                             <el-input v-model="vehicle.vehicleNum"></el-input>
+                          </el-form-item>
+                      </el-col>
+                      <el-col :span="9">
+                          <el-form-item label="购买日期:" prop="buyDate">
+                              <el-date-picker v-model="vehicle.buyDate"></el-date-picker>
+                          </el-form-item>
+                      </el-col>
+                  </el-row>
+                      <el-row>
+                          <el-col :span="6">
+                              <el-form-item label="车辆品牌:" prop="brand">
+                                  <el-input v-model="vehicle.brand"></el-input>
+                              </el-form-item>
+                          </el-col>
+                          <el-col :span="6">
+                              <el-form-item label="最大载客数:" prop="maxCarry">
+                                  <el-input v-model.number="vehicle.maxCarry">
+                                      <template #append>(人)</template>
+                                  </el-input>
+                              </el-form-item>
+                          </el-col>
+                           </el-row>
+                      <el-row>
+                          <el-col :span="6">
+                              <el-form-item label="车辆型号:" prop="model">
+                                  <el-input v-model="vehicle.model"></el-input>
+                              </el-form-item>
+                          </el-col>
+                          <el-col :span="6">
+                              <el-form-item label="排气量:" prop="displacement">
+                                  <el-input v-model="vehicle.displacement">
+                                      <template #append>(升)</template>
+                                  </el-input>
+                              </el-form-item>
+                          </el-col>
+                      </el-row>
+                      <el-row>
+                          <el-col :span="9">
+                              <el-form-item label="发动机号:" prop="engineNumber">
+                                  <el-input v-model="vehicle.engineNumber"></el-input>
+                              </el-form-item>
+                          </el-col>
+                          <el-col :span="9">
+                              <el-form-item label="">
+                                  <el-button type="primary" @click="inputVehicle">录入</el-button>
+                              </el-form-item>
+                          </el-col>
+                      </el-row>
+                  </el-form>
+              </el-col>
+          </el-row>
+    </div>
+    <script type="text/javascript">
+        axios.defaults.baseURL="http://localhost:8080/9_21";
+        axios.defaults.timeout=4000;
+
+        const options= {
+            data() {
+                return {
+                    vehicle: {
+                        vehicleNum: '',
+                        buyDate: '',
+                        brand: '',
+                        maxCarry: 30,
+                        model: '',
+                        displacement: '',
+                        engineNumber: '',
+                    },
+                    validateRules: {
+                        vehicleNum: [{required: true, message: '请输入车牌号!', trigger: 'blur'}],
+                        buyDate: [{required: true, message: '请输入购买日期!', trigger: 'blur'}],
+                        brand: [{required: true, message: '请输入车辆品牌!', trigger: 'blur'}],
+                        maxCarry: [{required: true, message: '请输入最大载客数量!', trigger: 'blur'}, {
+                            type: 'number',
+                            message: '请输入数值!',
+                            trigger: 'blur'
+                            }],
+                        }
+
+                };
+            },
+                  methods:{
+                //检验车牌号输入是否正确的方法
+                      checkVehicleNum(rule,value,callback){
+                          //车牌正则表达式
+                        let aaa=/^[京津沪渝冀豫云辽黑湘皖鲁新苏浙赣鄂桂甘晋蒙陕吉闽贵粤青藏川宁琼使领][A-Z][A-Z0-9]{4}[A-Z0-9挂学警港澳]$/;
+                        if(aaa.test(value)){
+                               callback;
+                        }else{
+                            callback(new Error());
+                        }
+                      },
+                      //点击录入执行的方法
+                      inputVehicle(){
+                          this.$refs['myForm'].validate(valid=>{
+                              if(valid){
+                                  axios.post('/car/add',this.vehicle).then(resp=>{
+                                      if(resp.data.code==0){
+                                          if(resp.data.result){
+                                              this.$refs['myForm'].resetFields();
+                                              ElementPlus.ElMessage({type:'success',message:'录入成功!'});
+                                          }else{
+                                              ElementPlus.ElMessage({type:'danger',message:'系统故障，请稍后重试！'});
+                                          }
+                                      }else{
+                                          ElementPlus.ElMessage({type:'warning',message:resp.data.msg});
+                                }
+                              })
+                          }
+                         })
+                      }
+
+                  }
+        }
+        const app=Vue.createApp(options);
+        app.use(ElementPlus);
+        for(const [iconName,iconComp] of Object.entries(ElementPlusIconsVue)){
+            if(iconName=='Menu'){
+                app.component('IconMenu',iconComp);
+            }else{
+                app.component(iconName,iconComp);
+            }
+        }
+        const vm=app.mount("#app");
+    </script>
+</body>
+</html>

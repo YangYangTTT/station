@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>线路录入</title>
+    <link rel="stylesheet" type="text/css" href="../css/element-plus.index.css">
+    <script type="text/javascript" src="../js/vue.global.3.2.39.js"></script>
+    <script type="text/javascript" src="../js/element-plus.2.2.15.js"></script>
+    <script type="text/javascript" src="../js/element_plus_icons.2.0.9.js"></script>
+    <script type="text/javascript" src="../js/axios.min.0.24.0.js"></script>
+</head>
+<body>
+    <div id="app">
+            <el-breadcrumd>
+                  <el-breadcrumd-item>主页</el-breadcrumd-item>
+                <el-breadcrumd-item>录入新路线</el-breadcrumd-item>
+            </el-breadcrumd>
+        <br>
+            <el-form :model="route" :rules="validateRules" ref="myForm">
+                   <el-row>
+                       <el-col :span="6">
+                       <el-from-item label="线路名称" prop="routeName">
+                       <el-input v-model="route.routeName"  placeholder="线路名称"> </el-input>
+                       </el-from-item>
+                       </el-col>
+                   </el-row>
+                <el-row>
+                    <el-col :span="6">
+                        <el-form-item label="始发站" prop="startStation.stationId">
+                          <el-select v-model="route.startStation.stationId">
+                              <el-option label="请选择" :value="0"></el-option>
+                              <el-option v-for="station in availStartStations" :value="station.stationId"
+                                         :label="station.stationName"></el-option>
+                          </el-select>
+                        </el-form-item>
+                        </el-col >
+                    <el-col :span="6" :offset="3">
+                        <el-form-item label="终点站:" prop="terminalStation.stationId">
+                            <el-select v-model="route.terminalStation.stationId">
+                                <el-option :value="0" label="请选择"></el-option>
+                                <el-option v-for="station in availTerminalStations" :value="station.stationId"
+                                           :label="station.stationName"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                        </el-row>
+                <el-row>
+                    <el-col :span="6">
+                        <el-form-item label="全程票价:" prop="price">
+                            <el-input v-model.number="route.price" type="number">
+                                <template #append>(元)</template>
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6" :offset="3">
+                        <el-form-item label="托运费:" prop="baggageFee">
+                            <el-input v-model="route.baggageFee" :step="0.001" type="number">
+                                <template #append>(元/KgKm)</template>
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+
+                <el-row>
+                    <el-col :span="9">
+                        <el-form-item label="途经站点:">
+                            <el-table :data="throughStations" border size="small">
+                                <el-table-column label="序号" :width="60">
+                                    <template #default="scope">
+                                        {{scope.$index+1}}
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="站点名称" prop="stationName" :width="90">
+                                </el-table-column>
+                                <el-table-column label="票价(元)" :width="120">
+                                    <template #default="scope">
+                                        <el-input v-model.number="scope.row.price" type="number"></el-input>
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="操作">
+                                    <template #default="scope">
+                                        <el-button icon="CloseBold" size="small"
+                                                   @click="deleteThroughStation(scope.$index)"></el-button>
+                                        <el-button icon="Top" size="small" :disabled="scope.$index==0"
+                                                   @click="changePosition(scope.$index,-1)"></el-button>
+                                        <el-button icon="Bottom" size="small" :disabled="scope.$index==throughStations.length-1"
+                                                   @click="changePosition(scope.$index,1)"></el-button>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="9">
+                        <el-form-item label="">
+                            <el-button type="success" @click="addThroughStation">
+                                <template #icon>
+                                    <el-icon>
+                                        <back></back>
+                                    </el-icon>
+                                </template>
+                                <template #default>添加</template>
+                            </el-button>
+
+                            <el-select v-model="selectedThroughStation">
+                                <el-option :value="0" label="请选择站点"></el-option>
+                                <el-option v-for="station in availThroughStations" :value="station.stationId"
+                                           :label="station.stationName"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+
+                <el-row>
+                    <el-col :span="4">
+                        <el-form-item label="">
+                            <el-button type="primary"  @click="inputRoute">录入</el-button>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+            </el-form>
+    </div>
+    <script type="text/javascript">
+        axios.defaults.baseURL="http://localhost:8080/9_21";
+        axios.defaults.timeout=4000;
+
+        const options={
+          data() {
+              return {
+                  route: {
+                      routeName: '',
+                      startStation: {
+                          stationId: 0
+                      },
+                      terminalStation: {
+                          stationId: 0
+                      },
+                      price: 0,
+                      baggageFee: 0,
+                  },
+                      allStations: [],
+                      throughStations: [],
+                      selectedThroughStation: 0,
+                      validateRules: {
+                          routeName: [{required: true, message: '请输入线路名称!', trigger: 'blur'}],
+                          startStation: {
+                              stationId: [{required: true, message: '请选择始发站!', trigger: 'blur'}, {
+                                  validator: this.checkSelect,
+                                  message: '请选择始发站!',
+                                  trigger: 'blur'
+                              }]
+                          },
+                          terminalStation: {
+                              stationId: [{required: true, message: '请选择终点站!', trigger: 'blur'}, {
+                                  validator: this.checkSelect,
+                                  message: '请选择终点站!',
+                                  trigger: 'blur'
+                              }]
+                          },
+                          price: [{required: true, message: '请输入全程票价!', trigger: 'blue'}],
+                          baggageFee: [{required: true, message: '请输入行包托运费!', trigger: 'blue'}]
+                      }
+                  }
+
+          },
+            computed: {
+                availStartStations(){
+                    return this.allStations.filter((ele, index) => {
+                        if (ele.stationId == this.route.terminalStation.stationId) {
+                            return false;
+                        }
+                        for (let index = 0; index < this.throughStations.length; index++) {
+                            if (this.throughStations[index].stationId == ele.stationId) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    });
+                },
+                availTerminalStations() {
+                    return this.allStations.filter((ele, index) => {
+                        if (ele.stationId == this.route.startStation.stationId) {
+                            return false;
+                        }
+                        for (let index = 0; index < this.throughStations.length; index++) {
+                            if (this.throughStations[index].stationId == ele.stationId) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    });
+                },
+                availThroughStations() {
+                    return this.allStations.filter((ele, index) => {
+                        if (ele.stationId == this.route.startStation.stationId) {
+                            return false;
+                        }
+                        if (ele.stationId == this.route.terminalStation.stationId) {
+                            return false;
+                        }
+                        for (let index = 0; index < this.throughStations.length; index++) {
+                            if (this.throughStations[index].stationId == ele.stationId) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    });
+                }
+            },
+            //点击页面 便发送请求得到所有站点信息  并赋值给return里面的allStations
+            created() {
+                axios.get("/sta/list").then(resp => {
+                    if (resp.data.code == 0) {
+                        this.allStations = resp.data.result;
+                        //console.log(allStations)
+                    } else {
+                        ElementPlus.ElMessage({type: 'warning', message: resp.data.msg});
+                    }
+                });
+            },
+                methods:{
+              //将途径站下拉框列表中选择的站点 添加到途径站点表格中
+                    //思路：循环所有站点 判断 allStations[index].stationId=selectedThroughStation
+                    addThroughStation() {
+                        //从allStations数组中，找到当前被选中的途经站点对象
+                        for (let index = 0; index < this.allStations.length; index++) {
+                            if (this.allStations[index].stationId == this.selectedThroughStation) {
+                                this.throughStations.push(this.allStations[index]);
+                                this.selectedThroughStation = 0;
+                                break;
+                            }
+                        }
+                    },
+                    inputRoute() {
+                        this.$refs['myForm'].validate(valid => {
+                            //发送请求
+                            this.route.throughStations = [];
+                            let s, obj;
+                            for (let index = 0; index < this.throughStations.length; index++) {
+                                s = this.throughStations[index];
+                                obj = {stationId: s.stationId, price: s.price, orderValue: index + 1};
+                                this.route.throughStations.push(obj);
+                            }
+                            axios.post("/rou/add", this.route).then(resp => {
+                                if (resp.data.code == 0) {
+                                    if (resp.data.result) {
+                                        this.$refs['myForm'].resetFields();
+                                        this.throughStations.splice(0);
+                                    } else {
+                                        ElementPlus.ElMessage({type: 'warning', message: '系统故障，请稍后重试!'});
+                                    }
+                                } else {
+                                    ElementPlus.ElMessage({type: 'warning', message: resp.data.msg});
+                                }
+                            });
+                        });
+                    },
+                    checkSelect(rule,value,callback){
+                      if(value==0){
+                         callback(new Error())
+                      }else{
+                      callback();
+
+                      }
+                    }
+                }
+
+        };
+        const app=Vue.createApp(options);
+        app.use(ElementPlus);
+        for(const [iconName,iconComp] of Object.entries(ElementPlusIconsVue)){
+            if(iconName=='Menu'){
+                app.component('IconMenu',iconComp);
+            }else{
+                app.component(iconName,iconComp);
+            }
+        }
+        const vm=app.mount("#app");
+    </script>
+</body>
+</html>

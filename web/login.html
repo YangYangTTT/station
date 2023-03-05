@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>登录</title>
+    <link rel="stylesheet" type="text/css" href="./css/element-plus.index.css">
+    <script type="text/javascript" src="./js/vue.global.3.2.39.js"></script>
+    <script type="text/javascript" src="./js/element-plus.2.2.15.js"></script>
+    <script type="text/javascript" src="./js/element_plus_icons.2.0.9.js"></script>
+    <script type="text/javascript" src="./js/axios.min.0.24.0.js"></script>
+</head>
+<body>
+<div id="app">
+    <el-container>
+        <el-header>
+            <div style="text-align: center;">
+               西安市汽车管理系统
+            </div>
+            <hr>
+        </el-header>
+        <el-main>
+            <el-row style="height: 100px;"></el-row>
+            <el-row>
+                <el-col :span="4" :offset="10">
+                    <el-form label-width="140">
+                        <el-form-item label="账号:">
+                            <el-input v-model="account"></el-input>
+                        </el-form-item>
+                        <el-form-item label="密码:">
+                            <el-input type="password" v-model="password"></el-input>
+                        </el-form-item>
+                        <el-form-item label="">
+                            <el-button type="primary" @click="login">登录</el-button>
+                            <el-button native-type="reset" type="info">重置</el-button>
+                        </el-form-item>
+                    </el-form>
+                </el-col>
+            </el-row>
+        </el-main>
+    </el-container>
+
+</div>
+<script type="text/javascript">
+    axios.defaults.baseURL="http://localhost:8080/9_21";
+    axios.defaults.timeout=4000;
+
+    const options={
+        data(){
+            return {
+                account:'111',
+                password:'123'
+            };
+        },
+        methods:{
+            login(){
+                if(this.account && this.password){
+                    let data={account:this.account,password:this.password};
+                    axios.post("/login",data).then(resp=>{
+                        if(resp.status==200){
+                            if(resp.data.code==0){
+                                sessionStorage.setItem("currentUser",JSON.stringify(resp.data.result));
+                                 //localStorage
+                                 window.location.href="./main.html";
+
+                            }else{
+                                ElementPlus.ElMessage({message:resp.data.msg});
+                            }
+                        }
+                    });
+                }else{
+                    ElementPlus.ElMessage("请输入账号和密码!");
+                }
+            }
+        }
+    };
+    const app=Vue.createApp(options);
+    app.use(ElementPlus);
+    for(const [iconName,iconComp] of Object.entries(ElementPlusIconsVue)){
+        if(iconName=='Menu'){
+            app.component('IconMenu',iconComp);
+        }else{
+            app.component(iconName,iconComp);
+        }
+    }
+    const vm=app.mount("#app");
+</script>
+</body>
+</html>

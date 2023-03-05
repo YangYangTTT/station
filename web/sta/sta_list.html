@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" type="text/css" href="../css/element-plus.index.css">
+    <script type="text/javascript" src="../js/vue.global.3.2.39.js"></script>
+    <script type="text/javascript" src="../js/element-plus.2.2.15.js"></script>
+    <script type="text/javascript" src="../js/element_plus_icons.2.0.9.js"></script>
+    <script type="text/javascript" src="../js/axios.min.0.24.0.js"></script>
+</head>
+<body>
+    <div id="app">
+        <el-breadcrumb>
+            <el-breadcrumb-item><a href="#" @click.prevent="">主页</a></el-breadcrumb-item>
+            <el-breadcrumb-item>站点列表</el-breadcrumb-item>
+        </el-breadcrumb>
+        <br>
+        <el-row>
+            <el-col :span="12">
+                <h2>站点列表</h2>
+                <el-table :data="stations" border stripe size="small">
+                    <el-table-column prop="stationCode" label="站点代码"></el-table-column>
+                    <el-table-column prop="stationName" label="站点名称"></el-table-column>
+                    <el-table-column prop="distance" label="距离(Km)"></el-table-column>
+                    <el-table-column label="操作">
+                        <template #default>
+                            <el-button link>编辑</el-button>
+                            <el-button link>删除</el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </el-col>
+            <el-col :span="5" :offset="1">
+                <h2 style="margin-left: 40px;">录入新站点</h2>
+                <el-form :model="station" :label-width="110" :rules="validateRules" ref="myForm">
+                    <el-form-item label="站点代码:" prop="stationCode">
+                        <el-input maxlength="3" v-model="station.stationCode"></el-input>
+                    </el-form-item>
+                    <el-form-item label="站点名称:" prop="stationName">
+                        <el-input maxlength="10" v-model="station.stationName"></el-input>
+                    </el-form-item>
+                    <el-form-item label="距离:" prop="distance">
+                        <el-input v-model.number="station.distance">
+                            <template #append>(Km)</template>
+                        </el-input>
+                    </el-form-item>
+                    <el-form-item label="">
+                        <el-button type="primary" @click="inputStation">录入</el-button>
+                    </el-form-item>
+                </el-form>
+            </el-col>
+        </el-row>
+
+    </div>
+    <script type="text/javascript">
+        axios.defaults.baseURL="http://localhost:8080/9_21";
+        axios.defaults.timeout=4000;
+
+        const options= {
+            data() {
+                return {
+                    stations: [],
+                    station: {
+                        stationCode: '',
+                        stationName: '',
+                        distance: 0
+                    },
+                    validateRules: {
+                        stationCode: [{required: true, message: '请输入站点代码!', trigger: 'blur'}, {
+                            min: 3,
+                            message: '不能少于3个字符!',
+                            trigger: 'blur'
+                        }],
+                        stationName: [{required: true, message: '请输入站点名称!', trigger: 'blur'}],
+                        distance: [{required: true, message: '请输入站点距离!', trigger: 'blur'}, {
+                            type: 'number',
+                            message: '请输入整数值!',
+                            trigger: 'blur'
+                        }]
+
+                    }
+            }
+            },
+            created(){
+               this.loadStationList()
+            },
+            methods:{
+                      //此方法为加载站点信息页面  可在created调用 点击页面直接显示站点信息
+                loadStationList(){
+                      axios.get("/sta/list").then(resp=>{
+                        if(resp.data.code==0){
+                            //stations为所有站点信息
+                          this.stations=resp.data.result;
+
+                        }
+                      })
+                },
+                inputStation(){
+             this.$refs['myForm'].validate(valid=>{
+                  if(valid){
+                          axios.post("/sta/add",this.station).then(resp=>{
+                             if(resp.data.code==0){
+                                 if(resp.data.result){
+                                  //刷新左侧站点列表
+                                  this.loadStationList();
+                                  //清空输入框信息
+                                     this.$refs['myForm'].resetFields();
+                                 }else{
+                                     ElementPlus.ElMessage({type: 'warning', message: '系统故障，请稍后重试!'});
+                                 }
+                             }else{
+                                 ElementPlus.ElMessage({type: 'warning', message: resp.data.msg});
+                             }
+                          })
+
+                  }             })
+                }
+
+            }
+        }
+        const app=Vue.createApp(options);
+        app.use(ElementPlus);
+        for(const [iconName,iconComp] of Object.entries(ElementPlusIconsVue)){
+            if(iconName=='Menu'){
+                app.component('IconMenu',iconComp);
+            }else{
+                app.component(iconName,iconComp);
+            }
+        }
+        const vm=app.mount("#app");
+    </script>
+</body>
+</html>

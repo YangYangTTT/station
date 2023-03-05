@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>home_page</title>
+    <link rel="stylesheet" type="text/css" href="./css/element-plus.index.css">
+    <script type="text/javascript" src="./js/vue.global.3.2.39.js"></script>
+    <script type="text/javascript" src="./js/element-plus.2.2.15.js"></script>
+    <script type="text/javascript" src="./js/element_plus_icons.2.0.9.js"></script>
+    <script type="text/javascript" src="./js/axios.min.0.24.0.js"></script>
+    <style>
+        .aaa{
+            font-size: 50px;
+             color: #67c23a;
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="aaa">
+        <marquee  direction="left" scrollamount="12" behavior="alternate">
+            这里是主页面,请在菜单栏选择您的操作</marquee>
+    </div>
+    <script type="text/javascript">
+        axios.defaults.baseURL="http://localhost:8088/tickets";
+        axios.defaults.timeout=4000;
+
+        const options={
+          data(){
+              return {
+
+              };
+          }
+        };
+        const app=Vue.createApp(options);
+        app.use(ElementPlus);
+        for(const [iconName,iconComp] of Object.entries(ElementPlusIconsVue)){
+            if(iconName=='Menu'){
+                app.component('IconMenu',iconComp);
+            }else{
+                app.component(iconName,iconComp);
+            }
+        }
+        const vm=app.mount("#app");
+    </script>
+</body>
+</html>

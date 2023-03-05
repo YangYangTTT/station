@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" type="text/css" href="../css/element-plus.index.css">
+    <script type="text/javascript" src="../js/vue.global.3.2.39.js"></script>
+    <script type="text/javascript" src="../js/element-plus.2.2.15.js"></script>
+    <script type="text/javascript" src="../js/element_plus_icons.2.0.9.js"></script>
+    <script type="text/javascript" src="../js/axios.min.0.24.0.js"></script>
+    <script type="text/javascript" src="../js/common.js"></script>
+</head>
+<body>
+<div id="app">
+<el-row>
+    <el-col :span="18">
+        <el-form :model="employee" ref="myForm" :rules="validateRules" label-width="110px">
+            <el-row>
+                <el-col :span="9">
+                    <el-form-item label="登录账号:" prop="account">
+                        <el-input v-model="employee.account" :readonly="true"></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="9">
+                    <el-form-item label="真实姓名:" prop="realName">
+                        <el-input v-model="employee.realName"></el-input>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="9">
+                    <el-form-item label="性别:" prop="sex">
+                        <el-radio-group v-model="employee.sex">
+                            <el-radio label="m">男</el-radio>
+                            <el-radio label="f">女</el-radio>
+                        </el-radio-group>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="9">
+                    <el-form-item label="电话:" prop="mobile">
+                        <el-input v-model="employee.mobile"></el-input>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="9">
+                    <el-form-item label="身份证号码:" prop="idCardNum">
+                        <el-input v-model="employee.idCardNum"></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="9">
+                    <el-form-item label="出生日期:" prop="dob">
+                        <el-date-picker v-model="employee.dob"></el-date-picker>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="9">
+                    <el-form-item label="住址:" prop="address">
+                        <el-input v-model="employee.address"></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="9">
+                    <el-form-item label="入职日期:" prop="hireDate">
+                        <el-date-picker v-model="employee.hireDate"></el-date-picker>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="9">
+                    <el-form-item label="民族:" prop="nationality">
+                        <el-input v-model="employee.nationality"></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="9">
+                    <el-form-item label="职务:" prop="duty">
+                        <el-input v-model="employee.duty"></el-input>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="16">
+                    <el-form-item label="角色:" prop="role">
+                        <el-radio-group v-model="employee.role">
+                            <el-radio :label="0">系统管理员</el-radio>
+                            <el-radio :label="1">售票员</el-radio>
+                            <el-radio :label="2">站务员</el-radio>
+                            <el-radio :label="4">行包员</el-radio>
+                            <el-radio :label="3">司机</el-radio>
+                        </el-radio-group>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="16">
+                    <el-form-item label="">
+                        <el-button type="primary" @click="editEmployee">编辑</el-button>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+        </el-form>
+    </el-col>
+</el-row>
+    </div>
+    <script type="text/javascript">
+        axios.defaults.baseURL="http://localhost:8080/9_21";
+        axios.defaults.timeout=4000;
+      const contextPath="/9_21";
+//////流程为先通过sessionStorage.getItem("empId");得到此用户id 然后通过id查询信息展示在输入框
+        //再将改好的信息传至服务端实现编辑，  一共两个方法
+        const options={
+          data(){
+              return {
+                  employee: {},
+                  validateRules:{
+                      account: {required: true, message: '必须输入账号!', trigger: 'blur'}},
+                  realName: [{required: true, message: '必须输入真实姓名!', trigger: 'blur'},{
+                  min:2,message:'真实姓名不能少于两个字符!',trigger:'blur'
+                  }],
+                  sex:[{required:true,message:'必须输入性别',trigger:'blur'}],
+                  mobile: [{required: true, message: '必须输入电话号码!', trigger: 'blur'}],
+                  idCardNum: [{required: true, message: '必须输入身份证号码!', trigger: 'blur'}]
+              };
+          },
+            //加载编辑此人的信息  并展示在各编辑框的背景下面
+          created(){
+             let empId=sessionStorage.getItem("empId")
+              axios.get('/emp/info',{params:{empId:empId}}).then(resp=>{
+                  if(resp.data.code==0){
+                      this.employee=resp.data.result;
+                    //将两个日期属性的值从long转换为Data对象
+                      //此方法写在common里面
+                      this.employee.dob=window.parse2Date(this.employee.dob)
+                      this.employee.hireDate = window.parse2Date(this.employee.hireDate);
+                  }else{
+                      ElementPlus.ElMessage({type: 'warning', message: resp.data.msg});
+                  }
+              })
+          },
+            methods:{
+                editEmployee(){
+                    //获取ref=muForm的表单上面的检测
+                    //为真则发请求
+               this.$refs['myForm'].validate(isValid=>{
+                   if(isValid){
+                     axios.post("/emp/edit",this.employee).then(resp=>{
+                           if(resp.data.code==0){
+                               //返回结果为真
+                             if(resp.data.result){
+                                  //跳转至员工列表页面 并且提示编辑成功
+                                 //window.parent.vm.frameSrc = contextPath + "/emp/emp_list.html";
+                                window.location.href=contextPath+"/emp/emp_edit.html";
+                        // ElementPlus.ElMessage({type:'success',message:'录入成功'})
+                             }else{
+                                 ElementPlus.ElMessage({type: 'danger', message: '服务器故障，请稍后再试!'});
+                             }
+                           }else{
+                               ElementPlus.ElMessage({type: 'warning', message: resp.data.msg});
+                           }
+                     })
+                   }
+               })
+                }
+            }
+        };
+        const app=Vue.createApp(options);
+        app.use(ElementPlus);
+        for(const [iconName,iconComp] of Object.entries(ElementPlusIconsVue)){
+            if(iconName=='Menu'){
+                app.component('IconMenu',iconComp);
+            }else{
+                app.component(iconName,iconComp);
+            }
+        }
+        const vm=app.mount("#app");
+    </script>
+</body>
+</html>

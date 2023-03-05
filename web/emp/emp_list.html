@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="../css/element-plus.index.css">
+    <script type="text/javascript" src="../js/vue.global.3.2.39.js"></script>
+    <script type="text/javascript" src="../js/element-plus.2.2.15.js"></script>
+    <script type="text/javascript" src="../js/element_plus_icons.2.0.9.js"></script>
+    <script type="text/javascript" src="../js/axios.min.0.24.0.js"></script>
+    <script type="text/javascript" src="../js/common.js"></script>
+
+</head>
+<body>
+    <div id="app">
+        <el-breadcrumb>
+            <el-breadcrumb-item>主页</el-breadcrumb-item>
+            <el-breadcrumb-item>人员列表</el-breadcrumb-item>
+        </el-breadcrumb>
+        <br>
+         <el-table :data="employees">
+             <el-table-column label="账号" prop="account"></el-table-column>
+             <el-table-column label="真实姓名" prop="realName"></el-table-column>
+             <el-table-column  label="性别">
+                    <template #default="scope">
+                 {{convert2SexString(scope.row.sex) }}
+                    </template>
+             </el-table-column>
+             <el-table-column label="电话" prop="mobile"></el-table-column>
+             <el-table-column label="职务" prop="duty"></el-table-column>
+               <el-table-column label="角色">
+                 <template #default="scope">
+                      {{convert2RoleString(scope.row.role)}}
+                 </template>
+               </el-table-column>
+             <el-table-column label="操作">
+                 <template #default="scope">
+                     <el-button type="primary"  @click="showEditEmployee(scope.row.empId)" >编辑</el-button>
+                     <el-button type="danger">删除</el-button>
+                 </template>
+             </el-table-column>
+         </el-table>
+        <el-pagination layout="prev,pager,next,sizes,total,jumper"
+                       v-model:page-size="pageSize"
+                       v-model:current-page="currentPage" :background="true"
+                       :total="total"
+                       :page-sizes="pageSizes"
+                       @current-change="loadEmployeeList"
+                       @size-change="handleSizeChange"
+        >
+
+        </el-pagination>
+
+    </div>
+    <script type="text/javascript">
+        axios.defaults.baseURL="http://localhost:8080/9_21";
+        let contextPath = "/9_21";
+
+        const options= {
+            data() {
+                return {
+                    employees: [],
+                    pageSize:10,
+                    total:0,
+                    currentPage:1,
+                    pageSizes:[5,10,15,20]
+
+
+                };
+            },
+            //钩子函数  点击人员列表调用重新加载人员列表方法
+            created(){
+                 this.loadEmployeeList();
+            },
+            methods: {
+                //  根据传回来的数字判断性别  使用插槽调方法
+                convert2SexString(sex) {
+                    if (sex == 'm') {
+                        return "男";
+                    } else if (sex == "f") {
+                        return "女";
+                    }
+                    return "";
+                },
+
+                //根据传回来的数字判断角色  使用插槽调方法   此方法在common.js里面已经定义
+                convert2RoleString(role) {
+                    return convert2RoleName(role)
+                },
+
+                //重新加载人员页面（分页后的效果）
+                loadEmployeeList() {
+                    axios.post("emp/list", {pageSize: this.pageSize, currentPage: this.currentPage}).then(resp => {
+                        if (resp.data.code == 0) {
+                            this.total = resp.data.result.total;
+                            this.employees = resp.data.result.list;
+                        } else {
+                            ElementPlus.ElMessage({type: 'warning', message: resp.data.msg})
+                        }
+                    })
+                },
+                //点击编辑 调用此方法 跳转至编辑页面
+                showEditEmployee(empId){
+                 sessionStorage.setItem("empId",empId)
+                     //window.parent.vm.frameSrc=contextPath+"/emp/emp_edit.html"
+                   window.location.href=contextPath+"/emp/emp_edit.html";
+            }
+            }
+        };
+        const app=Vue.createApp(options);
+        app.use(ElementPlus);
+        for(const [iconName,iconComp] of Object.entries(ElementPlusIconsVue)){
+            if(iconName=='Menu'){
+                app.component('IconMenu',iconComp);
+            }else{
+                app.component(iconName,iconComp);
+            }
+        }
+        const vm=app.mount("#app");
+    </script>
+</body>
+</html>

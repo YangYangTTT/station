@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" type="text/css" href="../css/element-plus.index.css">
+    <script type="text/javascript" src="../js/vue.global.3.2.39.js"></script>
+    <script type="text/javascript" src="../js/element-plus.2.2.15.js"></script>
+    <script type="text/javascript" src="../js/element_plus_icons.2.0.9.js"></script>
+    <script type="text/javascript" src="../js/axios.min.0.24.0.js"></script>
+</head>
+<body>
+    <div id="app">
+        <el-breadcrumb>
+<el-breadcrumb-item>主页</el-breadcrumb-item>
+            <el-breadcrumb-item>录入班次</el-breadcrumb-item>
+        </el-breadcrumb>
+
+        <el-form :label-width="110" :model="trip" :rules="validateRules" ref="myForm">
+              <el-row>
+                  <el-col :span="6">
+                <el-form-item  label="所属线路" prop="route.routeId">
+                   <el-select v-model="trip.route.routeId"  @change="loadScheduledTrips" >
+                       <el-option :value="0" label="请选择"> </el-option>
+                       <el-option v-for="route in routes" :value="route.routeId" :label="route.routeName"></el-option>
+                   </el-select>
+                </el-form-item>
+                  </el-col>
+                  <el-col :span="12">
+                      <el-form-item label="发车日期时间" prop="leaveTime">
+                     <el-date-picker v-model="trip.leaveTime"  @change="loadScheduledTrips"></el-date-picker>
+                     <el-input placeholder="00:00" v-model="leaveTime" style="width:100px;"></el-input>
+                      </el-form-item>
+                  </el-col>
+              </el-row>
+                  <el-row>
+                      <el-col :span="6">
+                     <el-form-item label="车辆" prop="vehicle.vehicleId">
+                      <el-select v-model="trip.vehicle.vehicleId">
+                          <el-option :value="0" label="请选择"></el-option>
+                          <el-option v-for="vehicle in vehicles" value="vehicle.vehicleId" :label="vehicle.vehicleNum"></el-option>
+                      </el-select>
+                     </el-form-item>
+                      </el-col>
+                      <el-col :span="10">
+                          <el-form-item label="返程日期时间">
+                              <el-date-picker  v-model="trip.returnTime">
+                              </el-date-picker>
+                              <el-input placeholder="00:00" v-model="returnTime" style="width:100px;"></el-input>
+                          </el-form-item>
+                      </el-col>
+                  </el-row>
+             <el-row>
+                 <el-col :span="6">
+                   <el-form-item label="司机" prop="employee.empId">
+                   <el-select v-model="trip.employee.empId" >
+                       <el-option :value="0" label="请选择"></el-option>
+                       <el-option v-for="employee in employees" :value="employee.empId" :label="employee.realName"></el-option>
+                   </el-select>
+                   </el-form-item>
+                 </el-col>
+                 <el-col :span="6">
+                   <el-form-item>
+                  <el-button type="primary" @click="addTrip">提交</el-button>
+                   </el-form-item>
+                 </el-col>
+             </el-row>
+        </el-form>
+        <br>
+        <hr>
+        <h2>当日已安排的班次:</h2>
+         <el-table :data="scheduledTrips">
+             <el-table-column label="日期">
+             <template #default="scope">{{parseDateString(scope.row.leaveTime)}}</template>
+             </el-table-column>
+              <el-table-column label="线路" prop="route.routeName"></el-table-column>
+             <el-table-column label="发车时间">
+                 <template #default="scope">{{parseTimeString(scope.row.leaveTime)}}}</template>
+             </el-table-column>
+             <el-table-column label="车辆" prop="vehicle.vehicleNum"></el-table-column>
+             <el-table-column label="司机" prop="employee.realName"></el-table-column>
+         </el-table>
+    </div>
+    <script type="text/javascript">
+        axios.defaults.baseURL="http://localhost:8080/9_21";
+        axios.defaults.timeout=4000;
+
+        const options={
+          data(){
+              return {
+                  routes: [],
+                  vehicles: [],
+                  employees: [],
+                  trip: {
+                      route: {
+                          routeId: 0
+                      },
+                      leaveTime: '',
+                      returnTime: '',
+                      vehicle: {
+                          vehicleId: 0
+                      },
+                      employee: {
+                          empId: 0
+                      }
+                  },
+                  leaveTime: '',
+                  returnTime: '',
+                  scheduledTrips: [],
+                  validateRules:{
+                      route: {
+                          routeId: [{validator: this.checkSelectOption, message: '请选择线路!', trigger: 'change'}]
+                      },
+                      vehicle: {
+                          vehicleId: [{validator: this.checkSelectOption, message: '请选择车辆!'}]
+                      },
+                      leaveTime: [{required: true, message: '请选择发车日期!', trigger: 'blur'}],
+
+                      leaveTime2: [{required: true, message: '请输入发车时间!', trigger: 'blur'}]
+                  }
+              };
+          },
+
+            created(){
+              //设置发车日期和返程日期，为当前系统日期一周后的日期值
+              let current=new Date();
+               current.setHours(0,0,0,0);
+               current.setDate(current.getDate()+7);
+               this.trip.leaveTime=current;
+               let returnTime=new Date(current.getTime());
+                returnTime.setDate(returnTime.getDate()+1);
+                this.trip.returnTime=returnTime;
+            //载入 路线，车辆，司机信息
+                //1：载入线路信息
+               axios.get('/common/routes').then(resp=>{
+                 if(resp.data.code==0){
+                       this.routes=resp.data.result;
+                 }else{
+                     ElementPlus.ElMessage({type: 'warning', message: resp.data.msg});
+                 }
+               });
+               //2.载入车辆信息
+                axios.get('/common/vehicles').then(resp => {
+                    if (resp.data.code == 0) {
+                        this.vehicles = resp.data.result;
+                    } else {
+                        ElementPlus.ElMessage({type: 'warning', message: resp.data.msg});
+                    }
+                });
+                //3.载入司机信息  传入数据为角色
+               /* axios.get('/common/employees',{params: {role: 3}}).then(resp=>{
+                   if(resp.data.code==0){
+                       this.employees = resp.data.result;
+                   }else{
+                       ElementPlus.ElMessage({type: 'warning', message: resp.data.msg});
+                   }
+                })*/
+
+
+
+            },
+            methods:{
+              //将日期转换为字符串格式  用于显示发车日期
+                parseDateString(date){
+                    let d = new Date(date);
+                    let y=d.getFullYear();
+                    let m=d.getMonth();
+                    let day = d.getDate();
+                     return y+"-"+(m+1)+"-"+day;
+                },
+                //将时间转换为字符串格式 用于显示发车时间
+                parseTimeString(date){
+                    let d=new Date(date);
+                    let h=d.getHours();
+                    let m = d.getMinutes();
+                    return((h<10)?('0'+h):h)+":"+((m<10)?('0'+m):m);
+                },
+                checkSelectOption(rule,value,callback){
+                  if(value==0){
+                      callback(new Error());
+                  }else{
+                      callback();
+                  }
+                },
+                loadScheduledTrips(){
+                    //将发车时间转换为yyy-mm-dd格式
+                 let leaveTime=formatDate(this.trip.leaveTime);
+                 axios.get("/trip/searchByRouteAndLeaveTime",{
+                     params:{
+                         routeId:this.route.routeId,
+                         leaveTime: leaveTime
+                     }}).then(resp=>{
+                           if(resp.data.code==0){
+                   this.scheduledTrips=resp.data.result;
+                           }else{
+                               ElementPlus.ElMessage({type: 'warning', message: resp.data.msg});
+                           }
+                 })
+                },
+                addTrip(){
+                  this.$refs['myForm'].validate(valid=>{
+                      //将输入的发车时间，设置到trip对象的leaveTime对象中
+                      let time = this.leaveTime;
+                      if(time){
+                       let reg= /\d{1,2}:\d{1,2}/;
+                          if (reg.test(time)) {
+                              let array = time.split(":");
+                              if (array.length > 1) {
+                                  let hour = Number(array[0]);
+                                  let minute = Number(array[1]);
+                                  this.trip.leaveTime.setHours(hour, minute, 0, 0);
+                                  //返程时间
+                                  if (this.trip.returnTime && this.returnTime) {
+                                      if (reg.test(this.returnTime)) {
+                                          array = this.returnTime.split(":");
+                                          hour = Number(array[0]);
+                                          minute = Number(array[1]);
+                                          this.trip.returnTime.setHours(hour, minute, 0, 0);
+                                      }
+                                  }
+                                  //发送AJAX请求
+                                  axios.post("/trip/add", this.trip).then(resp => {
+                                      if(resp.data.code==0){
+                                          if(resp.data.result){
+                                              this.loadScheduledTrips();
+                                              this.leaveTime='';
+                                              this.returnTime='';
+                                              this.trip.vehicle.vehicleId=0;
+                                              this.trip.employee.empId=0;
+                                          }else{
+                                              ElementPlus.ElMessage({type: 'warning', message: '系统故障，请稍候再试!'});
+                                          }
+                                      }else{
+                                          ElementPlus.ElMessage({type: 'warning', message:resp.data.msg});
+                                      }
+                                  });
+                              } else {
+                                  ElementPlus.ElMessage({type: 'warning', message: '你输入的发车时间格式不正确!'});
+                              }
+                          } else {
+                              ElementPlus.ElMessage({type: 'warning', message: '你输入的发车时间格式不正确!'});
+                          }
+                      } else {
+                          ElementPlus.ElMessage({type: 'warning', message: '请输入发车时间!'});
+                      }
+                  });
+                }
+            }
+        };
+        const app=Vue.createApp(options);
+        app.use(ElementPlus);
+        for(const [iconName,iconComp] of Object.entries(ElementPlusIconsVue)){
+            if(iconName=='Menu'){
+                app.component('IconMenu',iconComp);
+            }else{
+                app.component(iconName,iconComp);
+            }
+        }
+        const vm=app.mount("#app");
+    </script>
+</body>
+</html>

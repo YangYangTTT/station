@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" type="text/css" href="../css/element-plus.index.css">
+    <script type="text/javascript" src="../js/vue.global.3.2.39.js"></script>
+    <script type="text/javascript" src="../js/element-plus.2.2.15.js"></script>
+    <script type="text/javascript" src="../js/element_plus_icons.2.0.9.js"></script>
+    <script type="text/javascript" src="../js/axios.min.0.24.0.js"></script>
+    <script type="text/javascript" src="../js/axios.min.0.24.0.js"></script>
+    <style>
+
+    </style>
+</head>
+<body>
+    <div id="app">
+        <el-breadcrumb>
+            <el-breadcrumb-item>主页</el-breadcrumb-item>
+            <el-breadcrumb-item>录入新人员</el-breadcrumb-item>
+        </el-breadcrumb>
+          <br>
+          <el-row>
+              <el-col :span="18">
+                   <el-form :model="employee" ref="myForm" :rules="validateRules" label-width="110px">
+                        <el-row>
+                            <el-col :span="9">
+                                <el-form-item label="登录账号:" prop="account">
+                                    <el-input v-model="employee.account"></el-input>
+                                </el-form-item>
+                            </el-col>
+                            <el-col :span="9">
+                             <el-form-item label="真实姓名:" prop="realName">
+                                 <el-input v-model="employee.realName"></el-input>
+                             </el-form-item>
+                            </el-col>
+                        </el-row>
+                       <el-row>
+                           <el-col :span="9">
+                               <el-form-item label="密码:" prop="pwd">
+                                   <el-input v-model="employee.pwd"></el-input>
+                               </el-form-item>
+                           </el-col>
+                           <el-col :span="9">
+                               <el-form-item label="重复密码:" prop="repeatPwd">
+                                   <el-input v-model="employee.repeatPwd"></el-input>
+                               </el-form-item>
+                           </el-col>
+                       </el-row>
+                       <el-row>
+                           <el-col :span="9">
+                               <el-form-item label="性别:" prop="sex">
+                                   <el-radio-group v-model="employee.sex">
+                                       <el-radio label="m">男</el-radio>
+                                       <el-radio label="f">女</el-radio>
+                                   </el-radio-group>
+                               </el-form-item>
+                           </el-col>
+                           <el-col :span="9">
+                               <el-form-item label="电话:" prop="mobile">
+                                   <el-input v-model="employee.mobile"></el-input>
+                               </el-form-item>
+                           </el-col>
+                       </el-row>
+                       <el-row>
+                           <el-col :span="9">
+                               <el-form-item label="身份证号码:" prop="idCardNum">
+                                   <el-input v-model="employee.idCardNum"></el-input>
+                               </el-form-item>
+                           </el-col>
+                           <el-col :span="9">
+                               <el-form-item label="出生日期:" prop="dob">
+                                   <el-date-picker v-model="employee.dob"></el-date-picker>
+                               </el-form-item>
+                           </el-col>
+                       </el-row>
+                       <el-row>
+                           <el-col :span="9">
+                               <el-form-item label="住址:" prop="address">
+                                   <el-input v-model="employee.address"></el-input>
+                               </el-form-item>
+                           </el-col>
+                           <el-col :span="9">
+                               <el-form-item label="入职日期:" prop="hireDate">
+                                   <el-date-picker v-model="employee.hireDate"></el-date-picker>
+                               </el-form-item>
+                           </el-col>
+                       </el-row>
+                       <el-row>
+                           <el-col :span="9">
+                               <el-form-item label="民族:" prop="nationality">
+                                   <el-input v-model="employee.nationality"></el-input>
+                               </el-form-item>
+                           </el-col>
+                           <el-col :span="9">
+                               <el-form-item label="职务:" prop="duty">
+                                   <el-input v-model="employee.duty"></el-input>
+                               </el-form-item>
+                           </el-col>
+                       </el-row>
+                       <el-row>
+                           <el-col :span="16">
+                               <el-form-item label="角色:" prop="role">
+                                   <el-radio-group v-model="employee.role">
+                                       <el-radio :label="0">系统管理员</el-radio>
+                                       <el-radio :label="1">售票员</el-radio>
+                                       <el-radio :label="2">站务员</el-radio>
+                                       <el-radio :label="4">行包员</el-radio>
+                                       <el-radio :label="3">司机</el-radio>
+                                   </el-radio-group>
+                               </el-form-item>
+                           </el-col>
+                       </el-row>
+                       <el-row>
+                           <el-col :span="16">
+                               <el-form-item label="">
+                                   <el-button type="primary" @click="inputEmployee">录入</el-button>
+                               </el-form-item>
+                           </el-col>
+                       </el-row>
+                   </el-form>
+              </el-col>
+          </el-row>
+    </div>
+    <script type="text/javascript">
+        axios.defaults.baseURL="http://localhost:8080/9_21";
+        axios.defaults.timeout=4000;
+        const contextPath = "/9_21";
+        const options = {
+            data() {
+                return {
+                    employee: {
+                        account: '',
+                        realName: '',
+                        pwd: '',
+                        sex: 'm',
+                        idCardNum: '',
+                        dob: '',
+                        address: '',
+                        hireDate: '',
+                        nationality: '',
+                        duty: '',
+                        role: 0,
+                        repeatPwd: ''
+                    },
+                  validateRules:{
+                      account:[{required:true,message:'请输入员工账号',trigger:'blur'},{
+                      min:3,max:20,message:'输入的员工账号不符合要求' }],
+
+                      pwd:[ {required: true, message: '请输入员工的密码!', trigger: 'blur'},
+                          {min: 3, message: '密码长度不能少于3个字符!', trigger: 'blur'}],
+                      repeatPwd: [
+                          {required: true, message: '请再次输入员工的密码!', trigger: 'blur'},
+                          {
+                              min: 3,
+                              message: '重复输入的密码长度不能少于3个字符!',
+                              trigger: 'blur'
+                          },
+                          {
+                              validator: this.checkRepeatPwd,
+                              message: '两次输入的密码不一致!',
+                              trigger: 'blur'
+                          }],
+                      realName: [
+                          {required: true, message: '请输入真实姓名!', trigger: 'blur'}
+                      ],
+                      sex: [
+                          {required: true, message: '请选择性别!'}
+                      ],
+                      mobile: [{required: true, message: '请输入电话号码!', trigger: 'blur'}],
+                      idCardNum: [{required: true, message: '请输入身份证号码!', trigger: 'blur'}],
+                      dob: [],
+                      hireDate: [],
+                      address: [],
+                      duty: [],
+                      role: []
+                  }
+              };
+          },
+            methods: {
+                inputEmployee: function () {
+                    //校验
+                    this.$refs.myForm.validate(valid => {
+                        if (valid) {
+                            //发送ajax请求
+                            axios.post('/emp/add', this.employee).then(resp => {
+
+                                if (resp.data.code == 0) {
+                                    if (resp.data.result) {
+                                        //
+                                        ElementPlus.ElMessage({message: "录入成功!", type: 'success'});
+                                        this.$refs['myForm'].resetFields();
+                                    } else {
+                                        ElementPlus.ElMessage({message: "系统故障，稍后重试!", type: 'danger'});
+                                    }
+                                } else if (resp.data.code == -9) {
+                                    window.top.location.href = contextPath + "/login.html";
+                                } else {
+                                    ElementPlus.ElMessage(resp.data.msg);
+                                }
+                            })
+                        }
+                    });
+                },
+                //校验重复密码
+                checkRepeatPwd:function (rule,value,callback) {
+                    console.log("checkRepeatPwd:", value, this.employee.pwd);
+                     if(value!==this.employee.pwd){
+                         callback(new Error());
+                     }else{
+                         callback();
+                     }
+                },
+                //效验账户是否存在
+                checkAccount:function (rule,value,callback) {
+                    if (value) {
+                        axios.get("/emp/checkAccount", {params: {account: value}}).then(resp => {
+                            if (resp.data.code == 0) {
+                                if (resp.data.result) {
+                                    callback();
+                                } else {
+                                    callback(new Error());
+                                }
+                            } else {
+                                ElementPlus.ElMessage({type: 'warning', message: resp.data.msg})
+                                callback();
+                            }
+                        })
+                    }else{
+                       callback();
+                    }
+                }
+            }
+        };
+        const app=Vue.createApp(options);
+        app.use(ElementPlus);
+        for(const [iconName,iconComp] of Object.entries(ElementPlusIconsVue)){
+            if(iconName=='Menu'){
+                app.component('IconMenu',iconComp);
+            }else{
+                app.component(iconName,iconComp);
+            }
+        }
+        const vm=app.mount("#app");
+    </script>
+</body>
+</html>
